@@ -27,6 +27,8 @@ weather <- read.csv("weather.csv")
 
 #### EDA - Station ####
 # viewing overview and structure of "station" dataframe
+# installation_date is in character form, can be converted to POSIX
+# in next stage
 glimpse(station)
 
 # summary of the dataframe (quantity of zeros/NAs/infinite values, data 
@@ -39,7 +41,7 @@ print(status(station))
 freq(station)
 freq(station$city)
 
-# frequencies are irrelevant for ID and longitude/latitude
+# counts are irrelevant for ID and longitude/latitude
 # dock_count is the most relevant integer variable
 plot_num(station)
 print(profiling_num(station))
@@ -47,3 +49,36 @@ print(profiling_num(station))
 # descriptive statistics for the entire dataset
 # provides info on missing and distinct values for each column
 describe(station)
+
+#### EDA - Trip ####
+# viewing overview and structure of "trip" dataframe
+# date variables (start_date and end_date) are in character form
+glimpse(trip)
+
+# summary of the dataframe (quantity of zeros/NAs/infinite values, data 
+# types, and unique values)
+# shows a number of zeros for the zip_code column
+# IDs are all unique
+print(status(trip))
+
+# analysis for all categorical (character type) variables
+# dates should not be included (not character type) - will be converted
+# to POSIX in the next stage
+# subscription_type frequency is clearly shown for subscribers and customers
+# analysis for other variables is useful; however, there are too many unique
+# values to consider, should only focus on top 10 highest frequencies for
+# station names and zip codes
+freq(trip)
+
+# ID variables are classified as integer variables, but are not relevant for
+# numerical variable analysis
+# data profile is shown for duration (relevant numerical variable)
+plot_num(trip)
+print(profiling_num(trip))
+
+# descriptive statistics for the entire dataset
+# provides info on missing and distinct values for each column
+# 1493 missing values for zip_code
+describe(trip)
+
+
