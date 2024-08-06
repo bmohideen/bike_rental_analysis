@@ -215,3 +215,4 @@ weather_v1 <- weather_v1 %>%
            case_when(precipitation_inches == 'T' ~ "0.005",
                      .default = precipitation_inches))
 weather_v1$precipitation_inches <- as.numeric(weather_v1$precipitation_inches)
+
