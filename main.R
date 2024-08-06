@@ -113,3 +113,25 @@ print(profiling_num(weather))
 # 451 missing values in max_gust_speed_mph
 # 9 missing values in each of the visibility variables
 describe(weather)
+
+#### Data Cleaning - Overview ####
+# will replace blank values with NA
+# ensure that variable names/syntax are consistent across dataframes
+# find the number of cancelled trips (duration less than 3 mins), record trip
+# IDs, and remove from dataset
+# establish outlier thresholds, find outlier values, record the associated
+# trip IDs and remove from dataset
+# copies of data created for data cleaning stage
+station_v1 <- station
+trip_v1 <- trip
+weather_v1 <- weather
+
+#### Data Cleaning - Station ####
+# convert installation_date from character to POSIX format
+station_v1$installation_date <- mdy(station_v1$installation_date, 
+                                    tz = "UTC")
+
+# EDA confirmed that there are not any NAs or blanks in the station dataset
+# check for the count of duplicate rows
+# all rows are distinct (returns FALSE)
+any(duplicated(station_v1))
