@@ -189,3 +189,29 @@ trip_v1 <- trip_v1 %>%
 # trip IDs saved under outlier_trips data frame
 # save as a csv file for inclusion in the report
 write.csv(outlier_trips, "outlier_trips.csv", row.names = F)
+
+#### Data Cleaning - Weather ####
+# fix inconsistencies in column name (Speed vs. speed)
+weather_v1 <- weather_v1 %>%
+  rename(max_wind_speed_mph = max_wind_Speed_mph)
+
+# convert date to POSIX format from character type
+weather_v1$date <- mdy(weather_v1$date)
+
+# check for the count of duplicate rows
+# all rows are distinct (returns FALSE)
+any(duplicated(weather_v1))
+
+# replace blank values with NA in the events column of dataset
+# rows with NA do not need to be removed
+weather_v1 <- weather_v1 %>%
+  mutate(events = na_if(events, ""))
+
+# trace precipitation denoted by T, prevents column from being numeric
+# will be changed to the midpoint between 0 and the lowest value (0.01), 
+# which is 0.005
+weather_v1 <- weather_v1 %>%
+  mutate(precipitation_inches =
+           case_when(precipitation_inches == 'T' ~ "0.005",
+                     .default = precipitation_inches))
+weather_v1$precipitation_inches <- as.numeric(weather_v1$precipitation_inches)
