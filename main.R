@@ -113,3 +113,105 @@ print(profiling_num(weather))
 # 451 missing values in max_gust_speed_mph
 # 9 missing values in each of the visibility variables
 describe(weather)
+
+#### Data Cleaning - Overview ####
+# will replace blank values with NA
+# ensure that variable names/syntax are consistent across dataframes
+# find the number of cancelled trips (duration less than 3 mins), record trip
+# IDs, and remove from dataset
+# establish outlier thresholds, find outlier values, record the associated
+# trip IDs and remove from dataset
+# copies of data created for data cleaning stage
+station_v1 <- station
+trip_v1 <- trip
+weather_v1 <- weather
+
+#### Data Cleaning - Station ####
+# convert installation_date from character to POSIX format
+station_v1$installation_date <- mdy(station_v1$installation_date, 
+                                    tz = "UTC")
+
+# EDA confirmed that there are not any NAs or blanks in the station dataset
+# check for the count of duplicate rows
+# all rows are distinct (returns FALSE)
+any(duplicated(station_v1))
+
+#### Data Cleaning - Trip ####
+# replace blank values with NA in the zip_code column of dataset
+# zip_code will not be used for downstream analysis, so rows with NA 
+# do not need to be removed
+trip_v1 <- trip_v1 %>%
+  mutate(zip_code = na_if(zip_code, ""))
+
+# check for the count of duplicate rows
+# all rows are distinct (returns FALSE)
+any(duplicated(trip_v1))
+
+# convert start_date and end_date to POSIX format from character type
+trip_v1$start_date <- mdy_hm(trip_v1$start_date, 
+                             tz = "UTC")
+trip_v1$end_date <- mdy_hm(trip_v1$end_date, 
+                             tz = "UTC")
+
+# recording trip IDs for cancelled trips (duration less than 3 mins)
+# these trips would also have the exact same starting/ending station
+# duration column is in seconds
+# 3 minutes is equal to 3 x 60 = 180 seconds
+cancelled_trips <- trip_v1$id[trip_v1$start_station_id 
+                              == trip_v1$end_station_id
+                              & trip_v1$duration < 180]
+
+# filtering out rows with cancelled trips from the dataset
+trip_v1 <- trip_v1 %>%
+  filter(!(start_station_id == end_station_id 
+           & duration < 180))
+
+# trip IDs saved under cancelled_trips data frame
+# save as a csv file for inclusion in the report
+write.csv(cancelled_trips, "cancelled_trips.csv", row.names = F)
+
+# from the EDA, the p_01 value is 128.0 and the p_99 value is 13311.62
+# for the duration column (in seconds)
+# however, trips shorter than 128 seconds (approx. 2 mins) or longer than 
+# 13311 seconds (approx 3.7 hours) could still be realistic bike rental
+# timeframes
+# therefore, unrealistic trip length can be considered any trip under 
+# 1 minute (60 seconds) in length, or over 6 hours in length (21600 seconds)
+# values outside of this range (below 60 and above 21600) will be treated 
+# as outliers, and the row will be removed from the dataset
+# recording trip IDs for outlier trips
+outlier_trips <- trip_v1$id[trip_v1$duration < 60 | trip_v1$duration > 21600]
+
+# filtering out rows with outliers from the dataset
+trip_v1 <- trip_v1 %>%
+  filter(!(duration < 60 | duration > 21600))
+
+# trip IDs saved under outlier_trips data frame
+# save as a csv file for inclusion in the report
+write.csv(outlier_trips, "outlier_trips.csv", row.names = F)
+
+#### Data Cleaning - Weather ####
+# fix inconsistencies in column name (Speed vs. speed)
+weather_v1 <- weather_v1 %>%
+  rename(max_wind_speed_mph = max_wind_Speed_mph)
+
+# convert date to POSIX format from character type
+weather_v1$date <- mdy(weather_v1$date)
+
+# check for the count of duplicate rows
+# all rows are distinct (returns FALSE)
+any(duplicated(weather_v1))
+
+# replace blank values with NA in the events column of dataset
+# rows with NA do not need to be removed
+weather_v1 <- weather_v1 %>%
+  mutate(events = na_if(events, ""))
+
+# trace precipitation denoted by T, prevents column from being numeric
+# will be changed to the midpoint between 0 and the lowest value (0.01), 
+# which is 0.005
+weather_v1 <- weather_v1 %>%
+  mutate(precipitation_inches =
+           case_when(precipitation_inches == 'T' ~ "0.005",
+                     .default = precipitation_inches))
+weather_v1$precipitation_inches <- as.numeric(weather_v1$precipitation_inches)
