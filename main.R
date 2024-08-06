@@ -81,4 +81,35 @@ print(profiling_num(trip))
 # 1493 missing values for zip_code
 describe(trip)
 
+#### EDA - Weather ####
+# viewing overview and structure of "weather" dataframe
+# date variable is in character form
+# precipitation_inches is in character form
+glimpse(weather)
 
+# summary of the dataframe (quantity of zeros/NAs/infinite values, data 
+# types, and unique values)
+# zeros in min_visibility_miles, mean_wind_speed_mph, precipitation_inches, 
+# and cloud_cover 
+# NAs in all the visibility variables and max_gust_speed_mph
+print(status(weather))
+
+# analysis for all categorical (character type) variables
+# dates should not be included (not character type) - will be converted
+# to POSIX in the next stage
+# precipitation_inches should not be included as well
+# analysis for events and city variables is useful
+freq(weather)
+
+# analysis for all numerical values in the dataset (temperature, visibility,
+# wind speed, cloud cover)
+# zip code included, but the analysis is irrelevant
+plot_num(weather)
+print(profiling_num(weather))
+
+# descriptive statistics for the entire dataset
+# provides info on missing and distinct values for each column
+# 1473 missing values in events
+# 451 missing values in max_gust_speed_mph
+# 9 missing values in each of the visibility variables
+describe(weather)
