@@ -306,7 +306,7 @@ rush_hour_start_stations <- rush_hour_trips %>%
   arrange(desc(n)) %>%
 # selects top 10 rows in terms of frequency
   top_n(10, n) %>%
-#renames columns in table
+# renames columns in table
   rename(station_name = start_station_name, frequency = n)
 print(rush_hour_start_stations)
 
@@ -318,7 +318,7 @@ rush_hour_end_stations <- rush_hour_trips %>%
   arrange(desc(n)) %>%
   # selects top 10 rows in terms of frequency
   top_n(10, n) %>%
-  #renames columns in table
+  # renames columns in table
   rename(station_name = end_station_name, frequency = n)
 print(rush_hour_end_stations)
 
@@ -331,7 +331,7 @@ weekend_start_stations <- weekend_trips %>%
   arrange(desc(n)) %>%
   # selects top 10 rows in terms of frequency
   top_n(10, n) %>%
-  #renames columns in table
+  # renames columns in table
   rename(station_name = start_station_name, frequency = n)
 print(weekend_start_stations)
 
@@ -343,8 +343,48 @@ weekend_end_stations <- weekend_trips %>%
   arrange(desc(n)) %>%
   # selects top 10 rows in terms of frequency
   top_n(10, n) %>%
-  #renames columns in table
+  # renames columns in table
   rename(station_name = end_station_name, frequency = n)
 print(weekend_end_stations)
 
-          
+#### Bike Utilization ####
+# rather than calculating the average utilization for each individual bike
+# determined by bike_id, an average value will be calculated across all bikes
+# used within a single month
+# this will determine the months in which bikes are used more often, so an 
+# average value calculated across all bikes is sufficient
+# average for individual bikes is not necessary, and applicability would be 
+# limited as variations between different bikes are not known (all bikes are
+# looked at as the same in the dataset)
+# if there were different types of bikes mapped out in the dataset, then it 
+# would make more sense to calculate the average for individual bikes
+
+# create new column for months of the midpoint for each trip
+# each trip should only be associated with a single month
+# which is why midpoint for trip is used
+trip_v1$trip_month <- month(trip_v1$midpoint_trip)
+
+# create vector with number of days in each month (Jan - Dec, in order)
+# dates are all in 2014, which is not a leap year - Feb had 28 days
+month_days <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
+# calculating total duration of bike use for each month
+# 1 day = 24 x 60 x 60 = 86400 seconds
+# duration is in seconds, divide by 86400 (number of seconds in 1 day)
+# to get duration in days
+monthly_duration <- trip_v1 %>%
+  group_by(trip_month) %>%
+  summarise(total_duration = sum(duration) / 86400,
+# from EDA: there are 687 unique bike IDs, but all may not be in use for each
+# given month
+# need to multiply the denominator (the total time in the month) by the number
+# of unique bikes used during each month
+            unique_bikes = length(unique(bike_id)))
+
+# calculating average utilization
+# total time: number of days in month x number of unique bikes for the month
+# total duration: duration of bike rides converted to days (not seconds)
+monthly_duration <- monthly_duration %>%
+  mutate(total_time = month_days[trip_month] * unique_bikes[trip_month],
+         average_utilization = total_duration / total_time)
+print(monthly_duration)
