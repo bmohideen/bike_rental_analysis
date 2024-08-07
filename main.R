@@ -285,3 +285,66 @@ ggplot(weekday_hour_count, aes(x = hour_labels, y = frequency)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1),
         plot.title = element_text(hjust = 0.5))
+
+# through visual inspection of the histogram, the hours of weekdays with the 
+# highest trip volume are 7-10AM and 4-7PM (rush hours)
+# in 24h time: rush hours are 7:00 - 10:00 and 16:00 - 19:00
+# to determine the most frequent stations during rush hours, a separate 
+# dataframe that only includes trips with a midpoint within rush hour 
+# will be created
+# in trip_hour, the hours are defined by starting hour (so 7-9 and 16-18)
+rush_hour_trips <- weekday_trips %>%
+  filter(trip_hour %in% c(7, 8, 9, 16, 17, 18))
+
+#### Rush Hour Trips - Frequent Stations ####
+# now that a dataframe with only rush hour trips has been created, need to 
+# determine the most frequent starting and ending stations within the dataframe
+rush_hour_start_stations <- rush_hour_trips %>%
+# counts occurrences for each station name
+  count(start_station_name) %>%
+# orders by frequency in descending order
+  arrange(desc(n)) %>%
+# selects top 10 rows in terms of frequency
+  top_n(10, n) %>%
+#renames columns in table
+  rename(station_name = start_station_name, frequency = n)
+print(rush_hour_start_stations)
+
+# for the most frequent ending stations during rush hours:
+rush_hour_end_stations <- rush_hour_trips %>%
+  # counts occurrences for each station name
+  count(end_station_name) %>%
+  # orders by frequency in descending order
+  arrange(desc(n)) %>%
+  # selects top 10 rows in terms of frequency
+  top_n(10, n) %>%
+  #renames columns in table
+  rename(station_name = end_station_name, frequency = n)
+print(rush_hour_end_stations)
+
+#### Weekend Trips - Frequent Stations ####
+# for the most frequent starting stations during the weekends:
+weekend_start_stations <- weekend_trips %>%
+  # counts occurrences for each station name
+  count(start_station_name) %>%
+  # orders by frequency in descending order
+  arrange(desc(n)) %>%
+  # selects top 10 rows in terms of frequency
+  top_n(10, n) %>%
+  #renames columns in table
+  rename(station_name = start_station_name, frequency = n)
+print(weekend_start_stations)
+
+# for the most frequent ending stations during the weekends:
+weekend_end_stations <- weekend_trips %>%
+  # counts occurrences for each station name
+  count(end_station_name) %>%
+  # orders by frequency in descending order
+  arrange(desc(n)) %>%
+  # selects top 10 rows in terms of frequency
+  top_n(10, n) %>%
+  #renames columns in table
+  rename(station_name = end_station_name, frequency = n)
+print(weekend_end_stations)
+
+          
