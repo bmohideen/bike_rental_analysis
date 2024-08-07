@@ -216,3 +216,72 @@ weather_v1 <- weather_v1 %>%
                      .default = precipitation_inches))
 weather_v1$precipitation_inches <- as.numeric(weather_v1$precipitation_inches)
 
+#### Rush Hours ####
+# create new column with midpoint of each trip, so that the entire time spent
+# riding the bike is considered for each separate ride
+# origin required to ensure that there is a reference point when converting
+# the numeric values back to POSIX format
+trip_v1$midpoint_trip <- as.POSIXct(
+  (as.numeric(trip_v1$start_date) + as.numeric(trip_v1$end_date)) / 2, 
+  tz = "UTC", origin = "1970-01-01")
+
+# create new column with day of week for midpoint date
+trip_v1$trip_day_of_week <- weekdays(trip_v1$midpoint_trip)
+
+# only concerned about times on each day of the week
+# not interested in dates themselves
+# can convert midpoint_trip from ymd_hms format to only include hour time
+# this will ensure that midpoint_trip values can be compared across
+# different dates
+# this extracts only the hour from each time measurement
+trip_hour <- hour(trip_v1$midpoint_trip)
+trip_v1$trip_hour <- trip_hour
+
+# create a new dataframe that only includes Mon-Fri (weekdays)
+weekday_trips <- trip_v1 %>%
+  filter(trip_day_of_week %in% 
+           c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
+
+# create another new dataframe that only includes Sat-Sun (weekends)
+weekend_trips <- trip_v1 %>%
+  filter(trip_day_of_week %in% 
+           c("Saturday", "Sunday"))
+
+# creating a vector of hour labels
+hour_labels <- c("12AM-1AM", "1AM-2AM", "2AM-3AM", "3AM-4AM", 
+                 "4AM-5AM", "5AM-6AM","6AM-7AM", "7AM-8AM", 
+                 "8AM-9AM", "9AM-10AM", "10AM-11AM", "11AM-12PM",
+                 "12PM-1PM", "1PM-2PM", "2PM-3PM", "3PM-4PM", 
+                 "4PM-5PM", "5PM-6PM","6PM-7PM", "7PM-8PM", 
+                 "8PM-9PM", "9PM-10PM", "10PM-11PM", "11PM-12AM")
+
+# converting hour labels to factor form, so that order is maintained
+# in the histogram
+hour_labels <- factor(hour_labels, levels = 
+                        c("12AM-1AM", "1AM-2AM", "2AM-3AM", "3AM-4AM", 
+                          "4AM-5AM", "5AM-6AM","6AM-7AM", "7AM-8AM", 
+                          "8AM-9AM", "9AM-10AM", "10AM-11AM", "11AM-12PM",
+                          "12PM-1PM", "1PM-2PM", "2PM-3PM", "3PM-4PM", 
+                          "4PM-5PM", "5PM-6PM","6PM-7PM", "7PM-8PM", 
+                          "8PM-9PM", "9PM-10PM", "10PM-11PM", "11PM-12AM"))
+
+# creating a count of trips during each hour period, for all weekdays
+# saving as a dataframe with frequency (y-axis) and the trip_hour values 
+# (x-axis) ranging from 0-23
+weekday_hour_count <- weekday_trips %>%
+  count(trip_hour, name = "frequency")
+
+# replacing the trip_hour values with their corresponding hour_labels
+weekday_hour_count$trip_hour <- hour_labels
+
+# creating a histogram that shows the volume of trips for each hour of the day
+# specifically for weekdays
+ggplot(weekday_hour_count, aes(x = hour_labels, y = frequency)) +
+  geom_bar(stat = "identity", fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Frequency of Trips for 
+       Bike Rentals in the Bay Area on Weekdays", 
+       x = "Hour for the Midpoint of the Trip", 
+       y = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
