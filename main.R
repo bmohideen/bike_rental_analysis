@@ -384,7 +384,67 @@ monthly_duration <- trip_v1 %>%
 # calculating average utilization
 # total time: number of days in month x number of unique bikes for the month
 # total duration: duration of bike rides converted to days (not seconds)
-monthly_duration <- monthly_duration %>%
+monthly_util <- monthly_duration %>%
   mutate(total_time = month_days[trip_month] * unique_bikes[trip_month],
          average_utilization = total_duration / total_time)
-print(monthly_duration)
+print(monthly_util)
+
+#### Weather Condition Analysis ####
+# need to create new dataset that combines trip data with weather data
+# common columns are date and zip code
+# weather date format is year, month, day
+# trip date format includes time as well
+# time needs to be removed from date 
+# midpoint for each trip will be used for time to get a single date for 
+# each trip
+trip_v1$midpoint_trip <- as.Date(trip_v1$midpoint_trip)
+
+# can combine trip and station data together through the station name 
+# and name columns; city is included with station data as well
+# this will allow for trip data to be analyzed by city
+# (city also present in weather data)
+trip_station <- left_join(trip_v1, station_v1, 
+                          by = c("start_station_name" = "name"))
+
+# need to rename midpoint_trip column as date (to be consistent with weather)
+trip_station <- trip_station %>%
+  rename(date = midpoint_trip)
+
+# combining weather together with combined station and trip dataframe
+trip_station_weather <- left_join(trip_station, weather_v1, 
+                                  by = c("date", "city"))
+
+# for correlation matrix - all variables must be numeric
+# only need to include variables that are relevant to the analysis
+glimpse(trip_station_weather)
+# non - numeric: start_station_name, end_station_name, subscription_type, 
+# zip_code, trip_day_of_week, city, events
+# not relevant: id.x, start_date, start_station_id, end_date, end_station_id,
+# bike_id, zip_code.x, trip_hour, trip_month, id.y, lat, long, dock_count,
+# installation_date, zip_code.y, date
+trip_station_weather_v1 <- subset(
+  trip_station_weather, select = -c(start_station_name, end_station_name, 
+                                    subscription_type, zip_code.x, 
+                                    trip_day_of_week, city, events,
+                                    id.x, start_date, start_station_id, 
+                                    end_date, end_station_id, bike_id, 
+                                    zip_code.x, trip_hour, trip_month, 
+                                    id.y, lat, long, dock_count, 
+                                    installation_date, zip_code.y, date))
+
+# ensure that all variables are converted to numeric form
+trip_station_weather_v1 <- as.data.frame(
+  sapply(trip_station_weather_v1, as.numeric))
+
+# create correlation matrix using relevant variables
+# save as data frame
+# pairwise correlation ensures that value within single row is compared with
+# other values in same row
+# rows with NAs do not have to be removed
+weather_analysis <- as.data.frame(
+  cor(trip_station_weather_v1,
+      use = "pairwise.complete.obs"))
+print(weather_analysis)
+
+# plots correlation matrix for weather analysis
+corrplot(as.matrix(weather_analysis))
