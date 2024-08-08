@@ -416,5 +416,35 @@ trip_station_weather <- left_join(trip_station, weather_v1,
 
 # for correlation matrix - all variables must be numeric
 # only need to include variables that are relevant to the analysis
+glimpse(trip_station_weather)
+# non - numeric: start_station_name, end_station_name, subscription_type, 
+# zip_code, trip_day_of_week, city, events
+# not relevant: id.x, start_date, start_station_id, end_date, end_station_id,
+# bike_id, zip_code.x, trip_hour, trip_month, id.y, lat, long, dock_count,
+# installation_date, zip_code.y, date
+trip_station_weather_v1 <- subset(
+  trip_station_weather, select = -c(start_station_name, end_station_name, 
+                                    subscription_type, zip_code.x, 
+                                    trip_day_of_week, city, events,
+                                    id.x, start_date, start_station_id, 
+                                    end_date, end_station_id, bike_id, 
+                                    zip_code.x, trip_hour, trip_month, 
+                                    id.y, lat, long, dock_count, 
+                                    installation_date, zip_code.y, date))
 
+# ensure that all variables are converted to numeric form
+trip_station_weather_v1 <- as.data.frame(
+  sapply(trip_station_weather_v1, as.numeric))
 
+# create correlation matrix using relevant variables
+# save as data frame
+# pairwise correlation ensures that value within single row is compared with
+# other values in same row
+# rows with NAs do not have to be removed
+weather_analysis <- as.data.frame(
+  cor(trip_station_weather_v1,
+      use = "pairwise.complete.obs"))
+print(weather_analysis)
+
+# plots correlation matrix for weather analysis
+corrplot(as.matrix(weather_analysis))
