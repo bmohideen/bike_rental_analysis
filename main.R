@@ -12,9 +12,15 @@ library(lubridate)
 library(corrplot)
 
 # importing the datasets in as data frames
-station <- read.csv("station.csv")
-trip <- read.csv("trip.csv")
-weather <- read.csv("weather.csv")
+# SK (Points taken) When you use a project/repo, your environment is re-defined as your project folder. 
+# To ensure reproducibility make sure that the data is included in the folder, and
+# to ensure code portability, make sure that you define file paths within the environment. 
+station <- read.csv("datasets/station.csv")
+#station <- read.csv("station.csv")
+trip <- read.csv("datasets/trip.csv")
+#trip <- read.csv("trip.csv")
+weather <- read.csv("datasets/weather.csv")
+#weather <- read.csv("weather.csv")
 
 #### EDA - Overview ####
 
@@ -59,6 +65,8 @@ glimpse(trip)
 # types, and unique values)
 # shows a number of zeros for the zip_code column
 # IDs are all unique
+# SK (Points taken) The output of the code below shows 70 unique start/end station IDs, and 
+# 74 unique start/end station names. This is a discrepancy worth looking into.
 print(status(trip))
 
 # analysis for all categorical (character type) variables
@@ -180,6 +188,10 @@ write.csv(cancelled_trips, "cancelled_trips.csv", row.names = F)
 # values outside of this range (below 60 and above 21600) will be treated 
 # as outliers, and the row will be removed from the dataset
 # recording trip IDs for outlier trips
+# SK Can you provide evidence for your assumption above? When identifying outliers
+# try to use either subject matter expert opinion, or statistical approaches.
+# Gut feelings are not always helpful.
+
 outlier_trips <- trip_v1$id[trip_v1$duration < 60 | trip_v1$duration > 21600]
 
 # filtering out rows with outliers from the dataset
@@ -234,6 +246,9 @@ trip_v1$trip_day_of_week <- weekdays(trip_v1$midpoint_trip)
 # this will ensure that midpoint_trip values can be compared across
 # different dates
 # this extracts only the hour from each time measurement
+
+# SK Combining these two lines in one would save you 1.3M memory:
+# trip_v1$trip_hour <- hour(trip_v1$midpoint_trip)
 trip_hour <- hour(trip_v1$midpoint_trip)
 trip_v1$trip_hour <- trip_hour
 
@@ -246,7 +261,7 @@ weekday_trips <- trip_v1 %>%
 weekend_trips <- trip_v1 %>%
   filter(trip_day_of_week %in% 
            c("Saturday", "Sunday"))
-
+# SK Study the lubridate package. It has some nice functions.
 # creating a vector of hour labels
 hour_labels <- c("12AM-1AM", "1AM-2AM", "2AM-3AM", "3AM-4AM", 
                  "4AM-5AM", "5AM-6AM","6AM-7AM", "7AM-8AM", 
@@ -366,6 +381,7 @@ trip_v1$trip_month <- month(trip_v1$midpoint_trip)
 
 # create vector with number of days in each month (Jan - Dec, in order)
 # dates are all in 2014, which is not a leap year - Feb had 28 days
+# SK Lubridate package has a days_in_month() function
 month_days <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 # calculating total duration of bike use for each month
@@ -392,6 +408,14 @@ print(monthly_util)
 #### Weather Condition Analysis ####
 # need to create new dataset that combines trip data with weather data
 # common columns are date and zip code
+
+# SK Zip code is not the best join column because zip code in the trips dataset 
+# seems to a a user entered column with many missing and non-standard values.
+# Your EDA analysis above show over 1400 zip codes missing, and many more not
+# matching the zip codes in the weather dataset.
+# To me, it seems like date + city (extracted from a join with the stations 
+# dataset) is a better join condition.
+
 # weather date format is year, month, day
 # trip date format includes time as well
 # time needs to be removed from date 
@@ -403,6 +427,9 @@ trip_v1$midpoint_trip <- as.Date(trip_v1$midpoint_trip)
 # and name columns; city is included with station data as well
 # this will allow for trip data to be analyzed by city
 # (city also present in weather data)
+
+# SK trip dataset has 74 names for 70 station ids. I don't think 
+# joining on name is the best idea.
 trip_station <- left_join(trip_v1, station_v1, 
                           by = c("start_station_name" = "name"))
 
@@ -411,6 +438,7 @@ trip_station <- trip_station %>%
   rename(date = midpoint_trip)
 
 # combining weather together with combined station and trip dataframe
+# SK Thank God you didn't use zip code!
 trip_station_weather <- left_join(trip_station, weather_v1, 
                                   by = c("date", "city"))
 
@@ -419,6 +447,7 @@ trip_station_weather <- left_join(trip_station, weather_v1,
 glimpse(trip_station_weather)
 # non - numeric: start_station_name, end_station_name, subscription_type, 
 # zip_code, trip_day_of_week, city, events
+# SK You could convert events into a factor and make it numeric
 # not relevant: id.x, start_date, start_station_id, end_date, end_station_id,
 # bike_id, zip_code.x, trip_hour, trip_month, id.y, lat, long, dock_count,
 # installation_date, zip_code.y, date
